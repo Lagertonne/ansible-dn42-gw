@@ -1,31 +1,41 @@
-Role Name
+dn42-gw
 =========
+Configures a dn42-gateway on debian, with ifupdown, wireguard and frr
 
-A brief description of the role goes here.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+You need wireguard and frr installed. You also need to generate the wireguard keys by yourself.
 
 Role Variables
 --------------
-
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+```
+dn42:
+  as: 4242423767 # your own AS number
+  subnet: 172.21.74.128/26 # The subnet you want to route. Only one is currently supported
+  local_ip: 172.21.74.129 # The IP of your host
+  peers:
+    - peername: xyz # freely adjustable name
+      as: 4242423914 # remote as
+      source_ip: 172.21.74.129 # source ip to set in frr and the SNAT. Dunno if this is necessary
+      wg_port: 51832 # Local Wireguard Port to listen on if necessary. Not Necessary if we don't want to accept incoming connections
+      local:
+        ip_v4: 192.168.218.26 # IP Address of local wireguard client
+        privkey: "" # Wireguard Private Key
+        pubkey: "" # Wireguard Public IP
+      peer:
+        endpoint: "de2.g-load.eu:23767"
+        ip_v4: 172.20.53.97
+        pubkey: "B1xSG/XTJRLd+GrWDsB06BqnIq8Xud93YVh/LYYYtUY="    
+```
 
 Dependencies
 ------------
-
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+Nope.
 
 Example Playbook
 ----------------
-
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
-
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
 
 License
 -------
@@ -34,6 +44,4 @@ BSD
 
 Author Information
 ------------------
-
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
-# ansible-dn42-gw
+lagertonne
