@@ -1,0 +1,11 @@
+auto dn42-{{ item.peername }}
+iface dn42-{{ item.peername }} inet manual
+	pre-up ip link add dn42-{{ item.peername }} type wireguard
+	pre-up wg setconf dn42-{{ item.peername }} /etc/wireguard/dn42-{{ item.peername }}.conf
+	pre-up ip addr add {{ item.local.ip_v4 }} peer {{ item.peer.ip_v4 }} dev dn42-{{ item.peername }}
+	post-down ip link del dn42-{{ item.peername }}
+
+{% if item.local.ip_v6 is defined %}
+iface dn42-{{ item.peername }} inet6 manual
+	pre-up ip addr add {{ item.local.ip_v6 }} peer {{ item.peer.ip_v6 }} dev dn42-{{ item.peername }}
+{% endif %}

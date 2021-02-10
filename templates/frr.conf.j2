@@ -1,0 +1,49 @@
+frr version 7.5
+frr defaults traditional
+hostname {{ ansible_hostname }}
+log syslog informational
+no ipv6 forwarding
+service integrated-vtysh-config
+!
+ip router-id {{ dn42.local_ip }}
+!
+router bgp {{ dn42.as }}
+{% for peer in dn42.peers %}
+ neighbor DN42_{{ peer.peername|upper }}_V4 peer-group
+ neighbor DN42_{{ peer.peername|upper }}_V4 remote-as {{ peer.as }}
+ neighbor {{ peer.peer.ip_v4 }} peer-group DN42_{{ peer.peername|upper }}_V4
+ neighbor DN42_{{ peer.peername|upper }}_V6 peer-group
+ neighbor DN42_{{ peer.peername|upper }}_V6 remote-as {{ peer.as }}
+ !
+{% endfor %}
+ address-family ipv4 unicast
+  network {{ dn42.subnet }}
+{% for peer in dn42.peers %}
+  neighbor DN42_{{ peer.peername|upper }}_V4 prefix-list dn42-in in
+  neighbor DN42_{{ peer.peername|upper }}_V4 route-map RM_SET_SRC_{{ peer.peername|upper }} out
+{% endfor %}
+ exit-address-family
+!
+ip prefix-list dn42-in seq 1 deny 172.22.166.0/24 le 32
+ip prefix-list dn42-in seq 1001 permit 172.20.0.0/24 ge 28 le 32
+ip prefix-list dn42-in seq 1002 permit 172.21.0.0/24 ge 28 le 32
+ip prefix-list dn42-in seq 1003 permit 172.22.0.0/24 ge 28 le 32
+ip prefix-list dn42-in seq 1004 permit 172.23.0.0/24 ge 28 le 32
+ip prefix-list dn42-in seq 1100 permit 172.20.0.0/14 ge 21 le 29
+ip prefix-list dn42-in seq 2001 permit 10.100.0.0/14 le 32
+ip prefix-list dn42-in seq 2002 permit 10.127.0.0/16 le 32
+ip prefix-list dn42-in seq 2003 permit 10.0.0.0/8 ge 15 le 24
+ip prefix-list dn42-in seq 3001 permit 172.31.0.0/16 le 32
+ip prefix-list dn42-in seq 9999 deny 0.0.0.0/0 le 32
+!
+ip prefix-list allow-only-own seq 100 permit {{ dn42.subnet }} le 32
+ip prefix-list allow-only-own seq 9999 deny 0.0.0.0/0 le 32
+!
+{% for peer in dn42.peers %}
+route-map RM_SET_SRC_{{ peer.peername|upper }} permit 10
+ set src {{ peer.source_ip }}
+{% endfor %}
+!
+line vty
+!
+

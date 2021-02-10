@@ -1,0 +1,11 @@
+[Interface]
+PrivateKey = {{ item.local.privkey }}
+{% if item.wg_port is defined %}
+ListenPort = {{ item.wg_port }}
+{% endif %}
+ 
+[Peer]
+Endpoint = {{ item.peer.endpoint }}
+PublicKey = {{ item.peer.pubkey }}
+AllowedIPs = 0.0.0.0/0,::/0
+PersistentKeepalive = 25

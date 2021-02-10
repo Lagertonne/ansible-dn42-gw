@@ -1,0 +1,49 @@
+---
+- name: Generate wireguard config
+  ansible.builtin.template:
+    src: wireguard.config.j2
+    dest: /etc/wireguard/dn42-{{ item.peername }}.conf
+  loop: "{{ dn42.peers }}"
+
+- name: Generate interfaces file
+  ansible.builtin.template:
+    src: interfaces.j2
+    dest: /etc/network/interfaces.d/dn42-{{ item.peername }}
+  loop: "{{ dn42.peers }}"
+
+- name: Bring all interfaces up
+  ansible.builtin.shell: ifup dn42-{{ item.peername }}
+  loop: "{{ dn42.peers }}"
+
+- name: Configure frr
+  ansible.builtin.template:
+    src: frr.conf.j2
+    dest: /etc/frr/frr.conf
+  register: frr_config
+
+- name: Reload frr
+  ansible.builtin.service:
+    name: frr
+    state: reloaded
+  when: frr_config.changed
+
+- name: Configure iptables
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    source: "{{ item.local.ip_v4 }}"
+    destination: "! {{ item.peer.ip_v4 }}"
+    out_interface: dn42-{{ item.peername }}
+    jump: SNAT
+    to_source: "{{ item.source_ip }}"
+    comment: Fix source-ip for dn42-{{ item.peername }}
+  loop: "{{ dn42.peers }}"
+  register: edit_iptables 
+
+# This will apply to all loaded/active IPv4 tables.
+- name: Save current state of the firewall in system file
+  community.general.iptables_state:
+    state: saved
+    path: /etc/iptables/rules.v4
+  when: edit_iptables.changed
+
